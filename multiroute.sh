@@ -34,13 +34,13 @@ do
     IP_PPP=$(ip route | grep ppp${i} | awk '{print $9}')
 
     echo -n "modify routing table... "
-    ip route flush table T${i}
-    ip route add $(ip route show table main | grep "ppp${i}.*src") table T${i}
-    ip route add default via ${IP_PPP} table T${i}
+    ip route flush table P${i}
+    ip route add $(ip route show table main | grep "ppp${i}.*src") table P${i}
+    ip route add default via ${IP_PPP} table P${i}
     echo "OK"
 
     echo -n "routing rule ..."
-    ip rule add prio 30000 from ${IP_PPP} table T${i}
+    ip rule add prio 30000 from ${IP_PPP} table P${i}
     echo "OK"
 
     iptables -A INPUT -i ppp${i} -j ACCEPT
@@ -49,21 +49,21 @@ done
 
 
 echo -n "tun0 ... " 
-ip route flush table T4
-ip route add $(ip route show table main | grep 'tun0.*src') table T4
-ip route add default via 10.8.0.33 table T4
+ip route flush table T0
+ip route add $(ip route show table main | grep 'tun0.*src') table T0
+ip route add default via 10.8.0.33 table T0
 
-ip rule add prio 30000 from 10.8.0.34 table T4
+ip rule add prio 30000 from 10.8.0.34 table T0
 iptables -A INPUT -i tun0 -j ACCEPT
 
 echo "OK"
 
 echo -n "eth0 ... " 
 ip route flush table S0
-ip route add $(ip route show table main | grep 'eth0.*src') table S0
-ip route add default via 192.168.1.1 table S0
+ip route add $(ip route show table main | grep 'eth0.*src') table E0
+ip route add default via 192.168.1.1 table E0
 
-ip rule add prio 20000 from 192.168.1.2 table S0
+ip rule add prio 20000 from 192.168.1.2 table E0
 iptables -A INPUT -i eth0 -j ACCEPT
 
 echo "OK"
