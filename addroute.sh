@@ -11,7 +11,7 @@ LOCALGATE="192.168.1.1"
 
 while read line
 do
-    ip route del ${line} 
+    ip route del ${line} &> /dev/null
 
     ip route add ${line} \
     nexthop via ${VPNGATE} dev tun0  weight 40 \
@@ -19,7 +19,8 @@ do
 
 done < routes
 
-ip route add 111.142.0.0/255.255.0.0        via ${LOCALGATE}
-ip route add 112.5.66.69 via ${LOCALGATE} 
-ip route add 59.77.33.124 via ${LOCALGATE}
+while read line
+do
+    ip route add ${line} via ${LOCALGATE}
+done < directlist
 

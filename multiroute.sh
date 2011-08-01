@@ -1,7 +1,10 @@
 #!/bin/bash
 
-./addroute.sh
+ROUTECMD="ip route add default \\
+          "
+
 ./vpn.sh
+./addroute.sh
 
 # disable routing cache
 echo -1 > /proc/sys/net/ipv4/rt_cache_rebuild_count
@@ -17,7 +20,7 @@ ip rule add prio 32766 from all lookup main
 ip rule add prio 32767 from all lookup default
 
 # connect all xl2p vpn
-for i in $(seq 0 3)
+for i in $(seq 0 7)
 do
 	echo "c mb${i}" > /var/run/xl2tpd/l2tp-control
 	while :
@@ -43,6 +46,10 @@ do
     ip rule add prio 30000 from ${IP_PPP} table P${i}
     echo "OK"
 
+    GATE=$(ip route | grep 'ppp0.*src' | awk '{print $1}')
+    ROUTECMD="${ROUTECMD}nexthop via ${GATE} dev ppp${i}  weight 25 \\
+              "
+
     iptables -A INPUT -i ppp${i} -j ACCEPT
 done
 
@@ -55,11 +62,12 @@ ip route add default via 10.8.0.33 table T0
 
 ip rule add prio 30000 from 10.8.0.34 table T0
 iptables -A INPUT -i tun0 -j ACCEPT
+ROUTECMD="${ROUTECMD} nexthop via 10.8.0.33 dev tun0  weight 100 "
 
 echo "OK"
 
 echo -n "eth0 ... " 
-ip route flush table S0
+ip route flush table E0
 ip route add $(ip route show table main | grep 'eth0.*src') table E0
 ip route add default via 192.168.1.1 table E0
 
@@ -68,14 +76,19 @@ iptables -A INPUT -i eth0 -j ACCEPT
 
 echo "OK"
 
-GATE=$(ip route | grep 'ppp0.*src' | awk '{print $1}')
+ip route del 222.47.62.142
+ip route del 222.47.29.93
+ip route add 222.47.62.142 via ${GATE}
+ip route add 222.47.29.93 via ${GATE}
+
 
 ip route del default
+eval "${ROUTECMD}"
 
-ip route add default \
-nexthop via 10.8.0.33 dev tun0  weight 40 \
-nexthop via ${GATE} dev ppp0  weight 25 \
-nexthop via ${GATE} dev ppp1  weight 25 \
-nexthop via ${GATE} dev ppp2  weight 25 \
-nexthop via ${GATE} dev ppp3  weight 25 
-
+#ip route add default \
+#nexthop via 10.8.0.33 dev tun0  weight 40 \
+#nexthop via ${GATE} dev ppp0  weight 25 \
+#nexthop via ${GATE} dev ppp1  weight 25 \
+#nexthop via ${GATE} dev ppp2  weight 25 \
+#nexthop via ${GATE} dev ppp3  weight 25 
+#
