@@ -14,8 +14,8 @@ iptables -F
 #declare -a IP_PPP
 
 ip rule flush
-ip rule del prio 0 from all lookup main
-ip rule del prio 0 from all lookup default
+ip rule del prio 0 from all lookup main &> /dev/null
+ip rule del prio 0 from all lookup default &> /dev/null
 ip rule add prio 32766 from all lookup main
 ip rule add prio 32767 from all lookup default
 
@@ -47,7 +47,7 @@ do
     echo "OK"
 
     GATE=$(ip route | grep 'ppp0.*src' | awk '{print $1}')
-    ROUTECMD="${ROUTECMD}nexthop via ${GATE} dev ppp${i}  weight 25 \\
+    ROUTECMD="${ROUTECMD}nexthop via ${GATE} dev ppp${i}  weight 10 \\
               "
 
     iptables -A INPUT -i ppp${i} -j ACCEPT
@@ -62,7 +62,7 @@ ip route add default via 10.8.0.33 table T0
 
 ip rule add prio 30000 from 10.8.0.34 table T0
 iptables -A INPUT -i tun0 -j ACCEPT
-ROUTECMD="${ROUTECMD} nexthop via 10.8.0.33 dev tun0  weight 100 "
+ROUTECMD="${ROUTECMD} nexthop via 10.8.0.33 dev tun0  weight 80 "
 
 echo "OK"
 
